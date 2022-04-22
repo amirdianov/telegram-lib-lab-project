@@ -22,7 +22,7 @@ conn = sqlite3.connect('library.sqlite', check_same_thread=False)
 cursor = conn.cursor()
 
 
-def start_messaging(update: Update, context: CallbackContext) -> int:
+def start_messaging(update: Update, context: Any) -> int:
     """Function greets the user"""
     update.message.reply_text('Вас приветствует телеграм-бот \n'
                               'электронной библиотеки LibLab👋\n'
@@ -31,7 +31,7 @@ def start_messaging(update: Update, context: CallbackContext) -> int:
     methods_func(update, context)
 
 
-def help_func(update: Update, context: CallbackContext) -> None:
+def help_func(update: Update, context: Any) -> None:
     """Function gives some important information"""
     update.message.reply_text('Вам нужна помомщь❓ \nДавайте я вам расскажу о том, что я умею: \n'
                               '📖take_book - этот метод позволяет пользователю получить книгу\n'
@@ -42,7 +42,7 @@ def help_func(update: Update, context: CallbackContext) -> None:
     methods_func(update, context)
 
 
-def methods_func(update: Update, context: CallbackContext) -> None:
+def methods_func(update: Update, context: Any) -> None:
     """Function gets methods"""
     methods_reply_keyboard = [['📖take_book', '📅subscription'], ['❓help', '💻registration']]
     methods_markup = ReplyKeyboardMarkup(methods_reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
@@ -127,13 +127,13 @@ class Book:
         self.availability = availability
 
 
-def command(update: Update, context: CallbackContext):
+def command(update: Update, context: Any):
     command = update.message.text
     update.message.reply_text('Увы☹, но я тебя не понимаю.\nПопробуй воспользоваться этими командами👇')
     help_func(update, context)
 
 
-def stop(update, context):
+def stop(update: Update, context: Any):
     update.message.reply_text(
         "Пока-пока")
 
