@@ -2,14 +2,9 @@
 Telegram bot LibLab
 """
 
-import logging
-import sqlite3
-import time
-from typing import Any
-
-from telegram import Update, ForceReply, ReplyKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, CommandHandler, Filters, \
-    CallbackContext, PrefixHandler
+from registration import *
+from subscription import *
+from take_book import *
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -18,8 +13,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 TOKEN: str = '5224259246:AAHb9K2K1QrWpwKgKnrm5ftXtcre3TcFbZw'
-conn = sqlite3.connect('library.sqlite', check_same_thread=False)
-cursor = conn.cursor()
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -56,54 +49,18 @@ class User:
         self.registration = registration
         self.subscription = subscription
 
-    @staticmethod
-    def check_registration():
-        """u can make this method not static, how u can - make"""
-        # if user in data_base:
-        #     return True
-        # else:
-        #     return False
-        return True
-
     def registration_func(self: Update, context: Any):
-        """make people to registred and insert to db"""
-        """use ConversationHandler to insert user for db"""
-        self.message.reply_text('Давайте регестрироваться')
-        if User.check_registration():
-            return True
-        else:
-            self.message.reply_text('Регистрация...')
-
-    @staticmethod
-    def find_subscription():
-        """use db, u can make this method not static, how u can - make"""
+        registration_user(self, context)
 
     def subscription_func(self: Update, context: Any):
-        "take information from db and make object of Subscription class"
-        if not User.check_registration():  # обязательная проверка на зарегестрированность
-            User.registration_func(self, context)
-        # subscription = Subscription(User.find_subscription())
-        self.message.reply_text('Ваша подпска активна или не активна - вопрос')
+        subscription_user(self, context)
 
-    @staticmethod
-    def find_book(book):
-        """use db, u can make this method not static, how u can - make"""
-        return 0
-
-    def take_book(update: Update, context: Any):
-        "take information from db and make object of Book class"
-        update.message.reply_text('Напишите название книги')
-        # if not User.check_registration():  # обязательная проверка на зарегестрированность
-        #     User.registration_func(update, context)
-        # message = update.message.text
-        # book = Book(User.find_book(message))
-
+    def take_book_func(self: Update, context: Any):
+        take_book_user(self, context)
         return 1
 
-    def take_book_1(update: Update, context: Any):
-        book = update.message.text
-        url = [x[0] for x in cursor.execute('SELECT url from Books WHERE title = (?)', (book,))]
-        update.message.reply_text(''.join(url))
+    def take_book_1_func(self: Update, context: Any):
+        take_book_1_user(self, context)
         return ConversationHandler.END
 
 
@@ -114,9 +71,8 @@ class Subscription:
         self.valid_until = valid_until
         self.activity = activity
 
-    def renew_dates(self, update: Update, context: CallbackContext):
-        """methods renew dates of subscription, if its ended"""
-        pass
+    def renew_dates_func(self: Update, context: CallbackContext):
+        renew_dates_user(self, context)
 
 
 class Book:
@@ -130,6 +86,7 @@ class Book:
 def command(update: Update, context: Any):
     command = update.message.text
     update.message.reply_text('Увы☹, но я тебя не понимаю.\nПопробуй воспользоваться этими командами👇')
+    time.sleep(1)
     help_func(update, context)
 
 
@@ -149,12 +106,11 @@ def main() -> None:
     dispatcher.add_handler(PrefixHandler('💻', 'registration', User.registration_func))
     dispatcher.add_handler(PrefixHandler('📅', 'subscription', User.subscription_func))
     conv_handler = ConversationHandler(
-        entry_points=[PrefixHandler('📖', 'take_book', User.take_book)],
+        entry_points=[PrefixHandler('📖', 'take_book', User.take_book_func)],
         states={
-            1: [MessageHandler(Filters.text, User.take_book_1, pass_user_data=True)]
+            1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)]
     )
-    dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
     updater.start_polling()
 
