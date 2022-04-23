@@ -12,7 +12,7 @@ from db_func import *
 
 
 def find_book(book):
-    """use db, u can make this method not static, how u can - make"""
+    """use db"""
     return True
 
 
@@ -24,10 +24,7 @@ def take_book_user(update: Update, context: Any):
     # message = update.message.text
     # book = Book(User.find_book(message))
 
-    # return 1
-
 
 def take_book_1_user(update: Update, context: Any):
     value = update.message.text
     update.message.reply_text('\n'.join(get_items('url', 'Books', 'title', value)))
-    # return ConversationHandler.END

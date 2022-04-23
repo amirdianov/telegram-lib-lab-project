@@ -21,4 +21,4 @@ def check_registration():
 def registration_user(self: Update, context: Any):
     """make people to registred and insert to db"""
     """use ConversationHandler to insert user for db"""
-    self.message.reply_text('Давайте регестрироваться. Введите свои данные')
+    self.message.reply_text('Давайте регистрироваться. Введите свои данные')

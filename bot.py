@@ -5,6 +5,7 @@ Telegram bot LibLab
 from registration import *
 from subscription import *
 from take_book import *
+from db_func import *
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
@@ -22,6 +23,8 @@ def start_messaging(update: Update, context: Any) -> int:
                               'В нашей библиотеке представлена внушительная коллекция книг на любой вкус 👍\n'
                               'Желаю вам приятного чтения 🤓')
     methods_func(update, context)
+    us_id = update.message.from_user.id
+    add_item(us_id)
 
 
 def help_func(update: Update, context: Any) -> None:
@@ -111,6 +114,7 @@ def main() -> None:
             1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)]
     )
+    dispatcher.add_handler(conv_handler)
     dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
     updater.start_polling()
 
