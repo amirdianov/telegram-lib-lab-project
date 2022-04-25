@@ -2,27 +2,28 @@ import logging
 import sqlite3
 import time
 from typing import Any
-import re
 
 from telegram import Update, ForceReply, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, CommandHandler, Filters, \
     CallbackContext, PrefixHandler
-from db_func import add_item, update_items
+from db_func import add_item
 
 
-def check_registration():
+def check_registration(user_id: int) -> bool:
     """u can make this method not static, how u can - make"""
-    # if user in data_base:
-    #     return True
-    # else:
-    #     return False
+    conn = sqlite3.connect('library.sqlite')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * from Users WHERE id = ?", (user_id, ))
+    res = cursor.fetchone()
+    if res[3]:
+        return True
     return False
 
-#def registration_user(: Update, context: Any):
+
 def begin_registration_user(update: Update, context: Any):
     """make people to registred and insert to db"""
     """use ConversationHandler to insert user for db"""
-    if check_registration():
+    if check_registration(update.message.from_user.id):
         update.message.reply_text('Вы уже зарегистрированы в системе👍')
         return ConversationHandler.END
     else:
@@ -31,13 +32,14 @@ def begin_registration_user(update: Update, context: Any):
                                   'Например, Иванов Иван.😉')
         return 1
 
+
 def handle_user_data(update: Update, context: Any):
     """handle user data and insert it into db"""
     context.user_data['name_surname']: str = update.message.text.strip().title()
     re_expression: str = re.search(r'[А-Яа-я]+ [А-Яа-я]+', context.user_data['name_surname'])
     if re_expression is None or re_expression.group() != \
         context.user_data['name_surname']:
-        update.message.reply_text('Фамилия и имя введены неправильно ⛔😪\n'
+        update.message.reply_text('Фамилия и имя введены неправильно ⛔️😪\n'
         '🔄 Давай попробуем ввести их заново, но сначала я напомню основные правила ввода:\n'
         'Допустимые символы: заглавные и строчные буквы кириллицы и пробел.\n'
         'Например, Иванов Иван.😉')
@@ -50,3 +52,8 @@ def handle_user_data(update: Update, context: Any):
                               f'{context.user_data["name_surname"]}, добро пожаловать '
                               f'в сообщество нашей библиотеки! 🎆')
     return True
+
+
+
+if __name__ == '__main__':
+    print(check_registration(3))
