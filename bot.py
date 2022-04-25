@@ -13,7 +13,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5224259246:AAHDQC6MIhKhDqwW08y6UOZNDWUWZ5Fcmn0'
+TOKEN: str = '5224259246:AAFNi4jQBZ19CSuiqkB9kYNw6mz6h-lqI7E'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -125,12 +125,11 @@ def main() -> None:
     )
     dispatcher.add_handler(conv_handler)
 
-    conv_handler_registration = ConversationHandler(entry_points=
-    [PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
-    states=
-    {1: [MessageHandler(Filters.text, User.handle_user_data_func, pass_user_data=True)]
-    },
-    fallbacks=[CommandHandler('stop', stop)])
+    conv_handler_registration = ConversationHandler(
+        entry_points=[PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
+        states={
+        1: [MessageHandler(Filters.text, User.handle_user_data_func, pass_user_data=True)]
+        }, fallbacks=[CommandHandler('stop', stop)])
 
     dispatcher.add_handler(conv_handler_registration)
     dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
