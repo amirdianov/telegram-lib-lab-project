@@ -55,5 +55,4 @@ def handle_user_data(update: Update, context: Any):
 
 
 
-if __name__ == '__main__':
-    print(check_registration(3))
+
