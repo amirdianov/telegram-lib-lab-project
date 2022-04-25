@@ -13,7 +13,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5224259246:AAHb9K2K1QrWpwKgKnrm5ftXtcre3TcFbZw'
+TOKEN: str = '5224259246:AAHDQC6MIhKhDqwW08y6UOZNDWUWZ5Fcmn0'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -54,12 +54,15 @@ class User:
 
     #def registration_func(self: Update, context: Any):
     #    registration_user(self, context)
-
     def begin_registration_user_func(self: Update, context: Any):
         return begin_registration_user(self, context)
 
     def handle_user_data_func(self: Update, context: Any):
-        return handle_user_data(self, context)
+        flag: bool = handle_user_data(self, context)
+        if flag:
+            methods_func(self, context)
+            return ConversationHandler.END
+        return 1
 
     def subscription_func(self: Update, context: Any):
         subscription_user(self, context)
@@ -112,7 +115,7 @@ def main() -> None:
 
     dispatcher.add_handler(CommandHandler('methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
-    #dispatcher.add_handler(PrefixHandler('💻', 'registration', User.registration_func))
+    #dispatcher.add_handler(PrefixHandler('💻', 'registration', User.begin_registration_user_func))
     dispatcher.add_handler(PrefixHandler('📅', 'subscription', User.subscription_func))
     conv_handler = ConversationHandler(
         entry_points=[PrefixHandler('📖', 'take_book',User.take_book_func)],
@@ -122,16 +125,15 @@ def main() -> None:
     )
     dispatcher.add_handler(conv_handler)
 
-    dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
-
     conv_handler_registration = ConversationHandler(entry_points=
     [PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
     states=
-    {1: [MessageHandler(Filters.text, User.handle_user_data_func)]
+    {1: [MessageHandler(Filters.text, User.handle_user_data_func, pass_user_data=True)]
     },
     fallbacks=[CommandHandler('stop', stop)])
 
     dispatcher.add_handler(conv_handler_registration)
+    dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
 
     updater.start_polling()
 

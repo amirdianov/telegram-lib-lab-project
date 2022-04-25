@@ -2,11 +2,12 @@ import logging
 import sqlite3
 import time
 from typing import Any
+import re
 
 from telegram import Update, ForceReply, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, CommandHandler, Filters, \
     CallbackContext, PrefixHandler
-from db_func import add_item
+from db_func import add_item, update_items
 
 
 def check_registration():
@@ -17,21 +18,35 @@ def check_registration():
     #     return False
     return False
 
-#def registration_user(self: Update, context: Any):
-def begin_registration_user(self: Update, context: Any):
+#def registration_user(: Update, context: Any):
+def begin_registration_user(update: Update, context: Any):
     """make people to registred and insert to db"""
     """use ConversationHandler to insert user for db"""
     if check_registration():
-        self.message.reply_text('Вы уже зарегистрированы в системе👍')
+        update.message.reply_text('Вы уже зарегистрированы в системе👍')
         return ConversationHandler.END
     else:
-        self.message.reply_text('Давайте регистрироваться. Введите свои данные')
+        update.message.reply_text('Давайте регистрироваться 📝.\n Введите свои фамилию и имя через пробел.\n'
+                                  'Допустимые символы: заглавные и строчные буквы кириллицы и пробел.\n'
+                                  'Например, Иванов Иван.😉')
         return 1
 
-def handle_user_data(self: Update, context: Any):
+def handle_user_data(update: Update, context: Any):
     """handle user data and insert it into db"""
-    context.user_data['name_surname']: str = update.message.text.strip()
-    update_items('users', 'name_surname', 'telegram_id', context.user_data['name_surname'], self.message.from_user.id)
-    self.message.reply_text('Вы успешно зарегистровались ✅')
-    return ConversationHandler.END
-
+    context.user_data['name_surname']: str = update.message.text.strip().title()
+    re_expression: str = re.search(r'[А-Яа-я]+ [А-Яа-я]+', context.user_data['name_surname'])
+    if re_expression is None or re_expression.group() != \
+        context.user_data['name_surname']:
+        update.message.reply_text('Фамилия и имя введены неправильно ⛔😪\n'
+        '🔄 Давай попробуем ввести их заново, но сначала я напомню основные правила ввода:\n'
+        'Допустимые символы: заглавные и строчные буквы кириллицы и пробел.\n'
+        'Например, Иванов Иван.😉')
+        return False
+    update_items('users', 'name_surname', 'telegram_id', context.user_data['name_surname'],
+                 update.message.from_user.id)
+    update_items('users', 'registration', 'telegram_id', True,
+                 update.message.from_user.id)
+    update.message.reply_text('✅ Регистрация прошла успешно.\n'
+                              f'{context.user_data["name_surname"]}, добро пожаловать '
+                              f'в сообщество нашей библиотеки! 🎆')
+    return True

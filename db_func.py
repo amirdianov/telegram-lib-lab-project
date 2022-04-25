@@ -8,7 +8,7 @@ from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHa
     CallbackContext, PrefixHandler
 
 '''some functions to work with db'''
-conn = sqlite3.connect('library.sqlite', check_same_thread=False)
+conn = sqlite3.connect('library.sqlite', check_same_thread=False, timeout=1)
 cursor = conn.cursor()
 
 
@@ -35,3 +35,6 @@ def get_items(from_which_column, table, column_where, value):
 # cursor.execute('UPDATE Persons SET user_register = ? WHERE user_id = ?', (us_adress, us_id))
 def update_items(table, what_past, where_past, value_past, where_value):
     cursor.execute(f'UPDATE {table} SET {what_past} = ? WHERE {where_past} = ?', (value_past, where_value))
+    conn.commit()
+    print('done!')
+
