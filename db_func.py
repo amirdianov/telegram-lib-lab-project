@@ -36,5 +36,5 @@ def get_items(from_which_column, table, column_where, value):
 def update_items(table, what_past, where_past, value_past, where_value):
     cursor.execute(f'UPDATE {table} SET {what_past} = ? WHERE {where_past} = ?', (value_past, where_value))
     conn.commit()
-    print('done!')
+
 
