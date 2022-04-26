@@ -23,12 +23,12 @@ def begin_registration_user(update: Update, context: Any):
     """use ConversationHandler to insert user for db"""
     if check_registration(update.message.from_user.id):
         update.message.reply_text('Вы уже зарегистрированы в системе👍')
-        return ConversationHandler.END
+        return False
     else:
         update.message.reply_text('Давайте регистрироваться 📝.\nВведите свои фамилию и имя через пробел.\n'
                                   'Допустимые символы: заглавные и строчные буквы кириллицы и пробел.\n'
                                   'Например, Иванов Иван.😉')
-        return 1
+        return True
 
 
 def registration_handle_user_data(update: Update, context: Any):

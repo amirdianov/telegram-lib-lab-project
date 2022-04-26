@@ -53,7 +53,11 @@ class User:
         self.subscription = subscription
 
     def begin_registration_user_func(self: Update, context: Any):
-        return begin_registration_user(self, context)
+        flag: bool = begin_registration_user(self, context)
+        if flag:
+            return 1
+        methods_func(self, context)
+        return ConversationHandler.END
 
     def registration_handle_user_data_func(self: Update, context: Any):
         flag: bool = registration_handle_user_data(self, context)
