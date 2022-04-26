@@ -31,7 +31,7 @@ def begin_registration_user(update: Update, context: Any):
         return 1
 
 
-def handle_user_data(update: Update, context: Any):
+def registration_handle_user_data(update: Update, context: Any):
     """handle user data and insert it into db"""
     context.user_data['name_surname']: str = update.message.text.strip().title()
     re_expression: str = re.search(r'[А-Яа-я]+ +[А-Яа-я]+', context.user_data['name_surname'])

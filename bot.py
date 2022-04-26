@@ -52,13 +52,11 @@ class User:
         self.registration = registration
         self.subscription = subscription
 
-    #def registration_func(self: Update, context: Any):
-    #    registration_user(self, context)
     def begin_registration_user_func(self: Update, context: Any):
         return begin_registration_user(self, context)
 
-    def handle_user_data_func(self: Update, context: Any):
-        flag: bool = handle_user_data(self, context)
+    def registration_handle_user_data_func(self: Update, context: Any):
+        flag: bool = registration_handle_user_data(self, context)
         if flag:
             methods_func(self, context)
             return ConversationHandler.END
@@ -128,7 +126,7 @@ def main() -> None:
     conv_handler_registration = ConversationHandler(
         entry_points=[PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
         states={
-        1: [MessageHandler(Filters.text, User.handle_user_data_func, pass_user_data=True)]
+        1: [MessageHandler(Filters.text, User.registration_handle_user_data_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)])
 
     dispatcher.add_handler(conv_handler_registration)
