@@ -1,6 +1,7 @@
 """
 Telegram bot LibLab
 """
+import time
 
 from registration import *
 from subscription import *
@@ -13,7 +14,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5153990837:AAHVrwUUYPFwfQlGv37TeZ2A3dsW1MYWRis'
+TOKEN: str = '5224259246:AAFNi4jQBZ19CSuiqkB9kYNw6mz6h-lqI7E'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -62,12 +63,22 @@ class User:
     def registration_handle_user_data_func(self: Update, context: Any):
         flag: bool = registration_handle_user_data(self, context)
         if flag:
+            time.sleep(2)
             methods_func(self, context)
             return ConversationHandler.END
         return 1
 
-    def subscription_func(self: Update, context: Any):
-        subscription_user(self, context)
+    def begin_subscription_user_func(self: Update, context: Any):
+        flag: bool = subscription_user(self, context)
+        if not flag:
+            time.sleep(2)
+            methods_func(self, context)
+            return ConversationHandler.END
+        else:
+            return 1
+
+    def subscription_handle_user_func(self: Update, context: Any):
+        ...
 
     def take_book_func(self: Update, context: Any):
         take_book_user(self, context)
@@ -117,10 +128,8 @@ def main() -> None:
 
     dispatcher.add_handler(CommandHandler('methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
-    #dispatcher.add_handler(PrefixHandler('💻', 'registration', User.begin_registration_user_func))
-    dispatcher.add_handler(PrefixHandler('📅', 'subscription', User.subscription_func))
     conv_handler = ConversationHandler(
-        entry_points=[PrefixHandler('📖', 'take_book',User.take_book_func)],
+        entry_points=[PrefixHandler('📖', 'take_book', User.take_book_func)],
         states={
             1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)]
@@ -130,12 +139,19 @@ def main() -> None:
     conv_handler_registration = ConversationHandler(
         entry_points=[PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
         states={
-        1: [MessageHandler(Filters.text, User.registration_handle_user_data_func, pass_user_data=True)]
+            1: [MessageHandler(Filters.text, User.registration_handle_user_data_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)])
-
     dispatcher.add_handler(conv_handler_registration)
-    dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
 
+    conv_handler_subscription = ConversationHandler(
+        entry_points=[PrefixHandler('📅', 'subscription', User.begin_registration_user_func)],
+        states={
+            1: [MessageHandler(Filters.text, User.registration_handle_user_data_func, pass_user_data=True)]
+        }, fallbacks=[CommandHandler('stop', stop)]
+    )
+    dispatcher.add_handler(conv_handler_subscription)
+
+    dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
     updater.start_polling()
 
     updater.idle()
