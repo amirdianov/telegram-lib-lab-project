@@ -12,8 +12,8 @@ from db_func import add_item, update_items, get_items
 
 def check_registration(user_id: int) -> bool:
     """u can make this method not static, how u can - make"""
-    ans = get_items('registration', 'Users', 'telegram_id', user_id)
-    if len(ans) != 0:
+    ans = get_items('registration', 'Users', 'telegram_id', user_id)[0]
+    if ans != 0:
         return True
     return False
 

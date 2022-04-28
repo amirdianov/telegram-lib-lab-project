@@ -22,7 +22,6 @@ def take_book_user(update: Update, context: Any):
     # if not User.check_registration():  # обязательная проверка на зарегестрированность
     #     User.registration_func(update, context)
     # message = update.message.text
-    # book = Book(User.find_book(message))
 
 
 def take_book_1_user(update: Update, context: Any):

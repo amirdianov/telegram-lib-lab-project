@@ -3,6 +3,9 @@ Telegram bot LibLab
 """
 import time
 
+from telegram import ShippingOption, LabeledPrice
+from telegram.ext import PreCheckoutQueryHandler
+
 from registration import *
 from subscription import *
 from take_book import *
@@ -75,10 +78,33 @@ class User:
             methods_func(self, context)
             return ConversationHandler.END
         else:
+            self.message.reply_text('К сожалению у вас нет на данный момент подписки\n'
+                                    'Хотители вы ее получить')
             return 1
 
     def subscription_handle_user_func(self: Update, context: Any):
-        ...
+        text = self.message.text
+        if text == 'Да':
+            start_without_shipping_callback(self, context)
+        self.message.reply_text(f'Ждееем')
+        return ConversationHandler.END
+
+    # after (optional) shipping, it's the pre-checkout
+    def precheckout_callback(update: Update, context: CallbackContext) -> None:
+        """Answers the PreQecheckoutQuery"""
+        query = update.pre_checkout_query
+        # check the payload, is this from your bot?
+        if query.invoice_payload != 'Custom-Payload':
+            # answer False pre_checkout_query
+            query.answer(ok=False, error_message="Something went wrong...")
+        else:
+            query.answer(ok=True)
+
+    # finally, after contacting the payment provider...
+    def successful_payment_callback(update: Update, context: CallbackContext) -> None:
+        """Confirms the successful payment."""
+        # do something after successfully receiving payment?
+        update.message.reply_text("Thank you for your payment!")
 
     def take_book_func(self: Update, context: Any):
         take_book_user(self, context)
@@ -144,12 +170,19 @@ def main() -> None:
     dispatcher.add_handler(conv_handler_registration)
 
     conv_handler_subscription = ConversationHandler(
-        entry_points=[PrefixHandler('📅', 'subscription', User.begin_registration_user_func)],
+        entry_points=[PrefixHandler('📅', 'subscription', User.begin_subscription_user_func)],
         states={
-            1: [MessageHandler(Filters.text, User.registration_handle_user_data_func, pass_user_data=True)]
-        }, fallbacks=[CommandHandler('stop', stop)]
-    )
+            1: [MessageHandler(Filters.text, User.subscription_handle_user_func, pass_user_data=True)]
+        }, fallbacks=[CommandHandler('stop', stop)])
     dispatcher.add_handler(conv_handler_subscription)
+
+    # dispatcher.add_handler(CommandHandler("noshipping", User.start_without_shipping_callback))
+
+    # Pre-checkout handler to final check
+    dispatcher.add_handler(PreCheckoutQueryHandler(User.precheckout_callback))
+
+    # Success! Notify your user!
+    dispatcher.add_handler(MessageHandler(Filters.successful_payment, User.successful_payment_callback))
 
     dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
     updater.start_polling()
