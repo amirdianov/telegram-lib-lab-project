@@ -3,8 +3,8 @@ Telegram bot LibLab
 """
 import time
 
-from telegram import ShippingOption, LabeledPrice
-from telegram.ext import PreCheckoutQueryHandler
+from telegram import ShippingOption, LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import PreCheckoutQueryHandler, CallbackQueryHandler
 
 from registration import *
 from subscription import *
@@ -78,33 +78,27 @@ class User:
             methods_func(self, context)
             return ConversationHandler.END
         else:
-            self.message.reply_text('К сожалению у вас нет на данный момент подписки\n'
-                                    'Хотители вы ее получить')
-            return 1
+            active = subscription_activated_check(self, context)
+            if active:
+                return 1
+            else:
+                subscription_need_active(self, context)
+                return 2
 
-    def subscription_handle_user_func(self: Update, context: Any):
-        text = self.message.text
-        if text == 'Да':
-            start_without_shipping_callback(self, context)
-        self.message.reply_text(f'Ждееем')
+    def subscription_need_ans_func(self: Update, context: Any):
+        if subscription_need_ans(self, context):
+            pass
+        else:
+            time.sleep(2)
+            methods_func(self, context)
         return ConversationHandler.END
 
-    # after (optional) shipping, it's the pre-checkout
-    def precheckout_callback(update: Update, context: CallbackContext) -> None:
-        """Answers the PreQecheckoutQuery"""
-        query = update.pre_checkout_query
-        # check the payload, is this from your bot?
-        if query.invoice_payload != 'Custom-Payload':
-            # answer False pre_checkout_query
-            query.answer(ok=False, error_message="Something went wrong...")
-        else:
-            query.answer(ok=True)
-
-    # finally, after contacting the payment provider...
-    def successful_payment_callback(update: Update, context: CallbackContext) -> None:
-        """Confirms the successful payment."""
-        # do something after successfully receiving payment?
-        update.message.reply_text("Thank you for your payment!")
+    def subscription_not_need_active_func(self: Update, context: Any):
+        ...
+        # Дописать Алмазу функцию обновления подписки - сначала выводим даты,
+        # а потом спрашиваем о продлении, если да - то двигаем дату окончания на месяц вперед,
+        # функция на сдвиг месяца написана, а для обновления даты там тоже
+        # выделена функция, в остальном юзай дальше этот ConversationHandler и пиши функции,
 
     def take_book_func(self: Update, context: Any):
         take_book_user(self, context)
@@ -124,6 +118,24 @@ class Subscription:
 
     def renew_dates_func(self: Update, context: CallbackContext):
         renew_dates_user(self, context)
+
+    # checking correction pay
+    def precheckout_callback(self: Update, context: Any) -> None:
+        query = self.pre_checkout_query
+        if query.invoice_payload != 'Custom-Payload':
+            # answer False pre_checkout_query
+            query.answer(ok=False, error_message="Упс...Какая-то ошибка.")
+        else:
+            query.answer(ok=True)
+
+    # message after pay
+    def successful_payment_callback(self: Update, context: Any) -> None:
+        """Confirms the successful payment."""
+        # do something after successfully receiving payment?
+        self.message.reply_text("Теперь у вас есть подписка!")
+        time.sleep(2)
+        new_dates_user(self, context, self.message.from_user.id)
+        methods_func(self, context)
 
 
 class Book:
@@ -152,7 +164,7 @@ def main() -> None:
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start_messaging))
 
-    dispatcher.add_handler(CommandHandler('methods', methods_func))
+    dispatcher.add_handler(PrefixHandler('📃', 'methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
     conv_handler = ConversationHandler(
         entry_points=[PrefixHandler('📖', 'take_book', User.take_book_func)],
@@ -172,18 +184,14 @@ def main() -> None:
     conv_handler_subscription = ConversationHandler(
         entry_points=[PrefixHandler('📅', 'subscription', User.begin_subscription_user_func)],
         states={
-            1: [MessageHandler(Filters.text, User.subscription_handle_user_func, pass_user_data=True)]
+            1: [MessageHandler(Filters.text, User.subscription_not_need_active_func, pass_user_data=True)],
+            2: [MessageHandler(Filters.text, User.subscription_need_ans_func, pass_user_data=True)]
         }, fallbacks=[CommandHandler('stop', stop)])
     dispatcher.add_handler(conv_handler_subscription)
 
-    # dispatcher.add_handler(CommandHandler("noshipping", User.start_without_shipping_callback))
-
-    # Pre-checkout handler to final check
-    dispatcher.add_handler(PreCheckoutQueryHandler(User.precheckout_callback))
-
-    # Success! Notify your user!
-    dispatcher.add_handler(MessageHandler(Filters.successful_payment, User.successful_payment_callback))
-
+    # don't touch!
+    dispatcher.add_handler(PreCheckoutQueryHandler(Subscription.precheckout_callback))
+    dispatcher.add_handler(MessageHandler(Filters.successful_payment, Subscription.successful_payment_callback))
     dispatcher.add_handler(MessageHandler(Filters.text, command, pass_user_data=True))
     updater.start_polling()
 
