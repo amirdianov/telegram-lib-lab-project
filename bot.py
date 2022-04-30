@@ -60,6 +60,7 @@ class User:
         flag: bool = begin_registration_user(self, context)
         if flag:
             return 1
+        time.sleep(2)
         methods_func(self, context)
         return ConversationHandler.END
 
@@ -87,7 +88,7 @@ class User:
 
     def subscription_need_ans_func(self: Update, context: Any):
         if subscription_need_ans(self, context):
-            pass
+            return ConversationHandler.END
         else:
             time.sleep(2)
             methods_func(self, context)
@@ -97,8 +98,9 @@ class User:
         ...
         # Дописать Алмазу функцию обновления подписки - сначала выводим даты,
         # а потом спрашиваем о продлении, если да - то двигаем дату окончания на месяц вперед,
-        # функция на сдвиг месяца написана, а для обновления даты там тоже
-        # выделена функция, в остальном юзай дальше этот ConversationHandler и пиши функции,
+        # функция на сдвиг месяца написана add_months, а для обновления даты там тоже
+        # выделена функция renew_dates_user, в остальном юзай дальше этот ConversationHandler и пиши функции,
+        # когда будет пользователь продлевать подписку используй метод start_without_shipping_callback
 
     def take_book_func(self: Update, context: Any):
         take_book_user(self, context)
@@ -132,7 +134,8 @@ class Subscription:
     def successful_payment_callback(self: Update, context: Any) -> None:
         """Confirms the successful payment."""
         # do something after successfully receiving payment?
-        self.message.reply_text("Теперь у вас есть подписка!")
+        self.message.reply_text("Теперь у вас есть доступ ко всем книгам!📚\n"
+                                "Читайте с удовольствием!")
         time.sleep(2)
         new_dates_user(self, context, self.message.from_user.id)
         methods_func(self, context)
@@ -163,8 +166,9 @@ def main() -> None:
     updater: Updater = Updater(TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start_messaging))
+    dispatcher.add_handler(CommandHandler('methods', start_messaging))
 
-    dispatcher.add_handler(PrefixHandler('📃', 'methods', methods_func))
+    # dispatcher.add_handler(PrefixHandler('📃', 'methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
     conv_handler = ConversationHandler(
         entry_points=[PrefixHandler('📖', 'take_book', User.take_book_func)],

@@ -70,30 +70,31 @@ def subscription_activated_check(self: Update, context: Any):
 
 
 def subscription_need_active(self: Update, context: Any):
-    methods_reply_keyboard = [['Да, давайте оформим!', 'Нет, спасибо.'], ['📃methods']]
+    time.sleep(2)
+    methods_reply_keyboard = [['Да, давайте оформим 👌', 'Нет, спасибо 😒'], ['📃methods']]
     methods_markup = ReplyKeyboardMarkup(methods_reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
-    self.message.reply_text('Решайте!', reply_markup=methods_markup)
+    self.message.reply_text('Решайте!👇', reply_markup=methods_markup)
 
 
 def subscription_need_ans(self: Update, context: Any):
     ans = self.message.text
-    if ans == 'Да, давайте оформим!':
+    if ans == 'Да, давайте оформим 👌':
         start_without_shipping_callback(self, context)
-        self.message.reply_text('Мы ожидаем вашей оплаты!')
+        self.message.reply_text('💸 Мы ожидаем вашей оплаты 💸')
         return True
-    elif ans == 'Нет, спасибо.':
-        self.message.reply_text('Очень жаль. Тогда вдругой раз!')
+    elif ans == 'Нет, спасибо 😒':
+        self.message.reply_text('Очень жаль 😞\nТогда вдругой раз 📍')
         return False
     elif ans == '📃methods':
         return False
 
 
-# don't touch this, but u can use it
-def start_without_shipping_callback(update: Update, context: CallbackContext) -> None:
+# don't touch this, but u can use it and get them title and description about pay
+def start_without_shipping_callback(update: Update, context: CallbackContext, title="Оплата подписки",
+                                    description="Оплата подписки с целью получения доступа ко всем книгам LibLab"
+                                    ) -> None:
     """Sends an invoice without shipping-payment."""
     chat_id = update.message.chat_id
-    title = "Оплата подписки"
-    description = "Оплата подписки с целью получения доступа ко всем книгам LibLab"
     # select a payload just for you to recognize its the donation from your bot
     payload = "Custom-Payload"
     # In order to get a provider_token see https://core.telegram.org/bots/payments#getting-a-token
