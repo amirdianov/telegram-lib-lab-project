@@ -13,7 +13,7 @@ from db_func import add_item, update_items, get_items
 def check_registration(user_id: int) -> bool:
     """u can make this method not static, how u can - make"""
     ans = get_items('registration', 'Users', 'telegram_id', user_id)[0]
-    if ans:
+    if ans != 0:
         return True
     return False
 
@@ -44,7 +44,7 @@ def registration_handle_user_data(update: Update, context: Any):
         return False
     fullname: str = context.user_data['name_surname']
     fullname = fullname[:fullname.find(' ')] + \
-        fullname[fullname.rfind(' '):]
+               fullname[fullname.rfind(' '):]
     context.user_data['name_surname'] = fullname
     update_items('users', 'name_surname', 'telegram_id', context.user_data['name_surname'],
                  update.message.from_user.id)
