@@ -16,14 +16,22 @@ def find_book(book):
     return True
 
 
-def take_book_user(update: Update, context: Any):
-    "take information from db and make object of Book class"
-    update.message.reply_text('Напишите название книги')
-    # if not User.check_registration():  # обязательная проверка на зарегестрированность
-    #     User.registration_func(update, context)
-    # message = update.message.text
+def take_book_user(self: Update, context: Any):
+    "checking user in db"
+    user_id = self.message.from_user.id
+    if check_registration(user_id):
+        return True
+    else:
+        self.message.reply_text('Пройдите регистрацию💻')
+        return False
 
 
-def take_book_1_user(update: Update, context: Any):
-    value = update.message.text
-    update.message.reply_text('\n'.join(get_items('url', 'Books', 'title', value)))
+def take_book_type(self: Update, context: Any):
+    reply_keyboard = [['title', 'genre'], ['author', 'rating']]
+    markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    self.message.reply_text('По какому критерию книги показать?', reply_markup=markup)
+
+
+def take_book_1_user(self: Update, context: Any):
+    value = self.message.text
+    self.message.reply_text('\n'.join(get_items('url', 'Books', 'title', value)))

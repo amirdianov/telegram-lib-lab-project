@@ -22,9 +22,10 @@ def activated_subscription(user_id):
         return False
 
 
-def renew_dates_user(self: Update, context: CallbackContext):
-    """methods renew dates of subscription, if its ended"""
-    return True
+def get_dates_of_subscription(self: Update, context: CallbackContext, id):
+    start = get_items('exists_since', 'subscription', 'telegram_id', id)
+    finish = get_items('valid_until', 'subscription', 'telegram_id', id)
+    return start, finish
 
 
 def add_months(sourcedate, months):
@@ -37,15 +38,25 @@ def add_months(sourcedate, months):
 
 def new_dates_user(self: Update, context: Any, user_id):
     somedate = datetime.date.today()
-    # date_start = somedate
-    # date_finish = add_months(date_start, 1)
-    date_start = datetime.datetime.strftime(somedate, "%Y.%m.%d")
-    date_finish = datetime.datetime.strftime(add_months(somedate, 1), "%Y.%m.%d")
-
+    print(somedate)
+    date_start = somedate
+    date_finish = add_months(date_start, 1)
+    # date_start = datetime.datetime.strftime(somedate, "%Y.%m.%d")
+    # date_finish = datetime.datetime.strftime(add_months(somedate, 1), "%Y.%m.%d")
     update_items('Subscription', 'exists_since', 'telegram_id', date_start, user_id)
     update_items('Subscription', 'valid_until', 'telegram_id', date_finish, user_id)
     update_items('Users', 'subscription', 'telegram_id', True, user_id)
     update_items('Subscription', 'activity', 'telegram_id', True, user_id)
+
+
+def renew_dates_user(self: Update, context: CallbackContext, user_id):
+    """methods renew dates of subscription, if its ended"""
+    start, finish = get_dates_of_subscription(self, context, user_id)
+    var = finish[0].split('-')
+    finish = datetime.date(int(var[0]), int(var[1]), int(var[2]))
+    date_finish = add_months(finish, 1)
+    update_items('Subscription', 'valid_until', 'telegram_id', date_finish, user_id)
+    return True
 
 
 def subscription_user(self: Update, context: Any):
@@ -71,14 +82,37 @@ def subscription_activated_check(self: Update, context: Any):
 
 def subscription_need_active(self: Update, context: Any):
     time.sleep(2)
-    methods_reply_keyboard = [['Да, давайте оформим 👌', 'Нет, спасибо 😒'], ['📃methods']]
-    methods_markup = ReplyKeyboardMarkup(methods_reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    reply_keyboard = [['Да, давайте оформим 👌', 'Нет, спасибо 😒'], ['📃methods']]
+    methods_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     self.message.reply_text('Решайте!👇', reply_markup=methods_markup)
 
 
 def subscription_need_ans(self: Update, context: Any):
     ans = self.message.text
     if ans == 'Да, давайте оформим 👌':
+        start_without_shipping_callback(self, context)
+        self.message.reply_text('💸 Мы ожидаем вашей оплаты 💸')
+        return True
+    elif ans == 'Нет, спасибо 😒':
+        self.message.reply_text('Очень жаль 😞\nТогда вдругой раз 📍')
+        return False
+    elif ans == '📃methods':
+        return False
+
+
+def subscription_not_need_active(self: Update, context: Any):
+    time.sleep(2)
+    user_id = self.message.from_user.id
+    start, finish = get_dates_of_subscription(self, context, user_id)
+    reply_keyboard = [['Да, я бы хотел продлить еще на месяц 📆', 'Нет, спасибо 😒'], ['📃methods']]
+    methods_markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
+    self.message.reply_text(f'Ваша подписка активна с {start[0]}'
+                            f' до {finish[0]}\nХотели бы продлить ее?📆', reply_markup=methods_markup)
+
+
+def subscription_not_need_active_ans(self: Update, context: Any):
+    ans = self.message.text
+    if ans == 'Да, я бы хотел продлить еще на месяц 📆':
         start_without_shipping_callback(self, context)
         self.message.reply_text('💸 Мы ожидаем вашей оплаты 💸')
         return True

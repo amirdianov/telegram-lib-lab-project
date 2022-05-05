@@ -81,6 +81,7 @@ class User:
         else:
             active = subscription_activated_check(self, context)
             if active:
+                subscription_not_need_active(self, context)
                 return 1
             else:
                 subscription_need_active(self, context)
@@ -95,19 +96,55 @@ class User:
         return ConversationHandler.END
 
     def subscription_not_need_active_func(self: Update, context: Any):
-        ...
-        # Дописать Алмазу функцию обновления подписки - сначала выводим даты,
-        # а потом спрашиваем о продлении, если да - то двигаем дату окончания на месяц вперед,
-        # функция на сдвиг месяца написана add_months, а для обновления даты там тоже
-        # выделена функция renew_dates_user, в остальном юзай дальше этот ConversationHandler и пиши функции,
-        # когда будет пользователь продлевать подписку используй метод start_without_shipping_callback
+        if subscription_not_need_active_ans(self, context):
+            return ConversationHandler.END
+        else:
+            time.sleep(2)
+            methods_func(self, context)
+        return ConversationHandler.END
 
-    def take_book_func(self: Update, context: Any):
-        take_book_user(self, context)
-        return 1
+
+    def begin_take_book_user_func(self: Update, context: Any):
+        if take_book_user(self, context):
+            take_book_type(self, context)
+            return 1
+        else:
+            time.sleep(2)
+            methods_func(self, context)
 
     def take_book_1_func(self: Update, context: Any):
-        take_book_1_user(self, context)
+        ans = self.message.text
+        # здесь надо не завершать ConversationHandler, а продолжить
+        # чтобы дальше писать свой блок взятия книги по типу
+        if ans == 'title':
+            User.take_book_title(self, context)
+            return ConversationHandler.END
+        elif ans == 'genre':
+            User.take_book_genre(self, context)
+            return ConversationHandler.END
+        elif ans == 'author':
+            User.take_book_author(self, context)
+            return ConversationHandler.END
+        elif ans == 'rating':
+            # Можно как то так продолжить
+            self.message.reply_text('Вы уверены?')
+            return 5.1
+
+    def take_book_title(self: Update, context: Any):
+        self.message.reply_text('title')
+        return ConversationHandler.END
+
+    def take_book_genre(self: Update, context: Any):
+        self.message.reply_text('genre')
+        return ConversationHandler.END
+
+    def take_book_author(self: Update, context: Any):
+        self.message.reply_text('author')
+        return ConversationHandler.END
+
+    def take_book_rating(self: Update, context: Any):
+        text = self.message.text
+        self.message.reply_text('rating')
         return ConversationHandler.END
 
 
@@ -134,10 +171,14 @@ class Subscription:
     def successful_payment_callback(self: Update, context: Any) -> None:
         """Confirms the successful payment."""
         # do something after successfully receiving payment?
-        self.message.reply_text("Теперь у вас есть доступ ко всем книгам!📚\n"
-                                "Читайте с удовольствием!")
+        self.message.reply_text("Читайте с удовольствием!📚")
         time.sleep(2)
-        new_dates_user(self, context, self.message.from_user.id)
+        user_id = self.message.from_user.id
+        if get_items('exists_since', 'Subscription', 'telegram_id',
+                     user_id)[0] is not None:
+            renew_dates_user(self, context, user_id)
+        else:
+            new_dates_user(self, context, user_id)
         methods_func(self, context)
 
 
@@ -171,13 +212,16 @@ def main() -> None:
     # dispatcher.add_handler(PrefixHandler('📃', 'methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
     conv_handler = ConversationHandler(
-        entry_points=[PrefixHandler('📖', 'take_book', User.take_book_func)],
+        entry_points=[PrefixHandler('📖', 'take_book', User.begin_take_book_user_func)],
         states={
-            1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)]
+            1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)],
+            2.1: [MessageHandler(Filters.text, User.take_book_title, pass_user_data=True)],
+            3.1: [MessageHandler(Filters.text, User.take_book_genre, pass_user_data=True)],
+            4.1: [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True)],
+            5.1: [MessageHandler(Filters.text, User.take_book_rating, pass_user_data=True)],
         }, fallbacks=[CommandHandler('stop', stop)]
     )
     dispatcher.add_handler(conv_handler)
-
     conv_handler_registration = ConversationHandler(
         entry_points=[PrefixHandler('💻', 'registration', User.begin_registration_user_func)],
         states={
