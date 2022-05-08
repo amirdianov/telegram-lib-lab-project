@@ -2,6 +2,7 @@ import logging
 import sqlite3
 import time
 from typing import Any
+from itertools import chain
 
 from telegram import Update, ForceReply, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, CommandHandler, Filters, \
@@ -36,3 +37,12 @@ def get_items(from_which_column, table, column_where, value):
 def update_items(table, what_past, where_past, value_past, where_value):
     cursor.execute(f'UPDATE {table} SET {what_past} = ? WHERE {where_past} = ?', (value_past, where_value))
     conn.commit()
+
+def get_item(column: str, db_name: str, some_column: str, value: Any):
+    cursor.execute(f"SELECT {column} FROM {db_name} WHERE {some_column} = '{value}'")
+    return cursor.fetchall()
+
+def main_get_item(db_name: str, some_column: str, value: Any, *args, **kwargs):
+    selected_columns = ','.join(chain(args, kwargs.values()))
+    cursor.execute(f"SELECT {selected_columns} FROM {db_name} WHERE {some_column} = '{value}'")
+    return cursor.fetchall()

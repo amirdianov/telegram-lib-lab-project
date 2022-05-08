@@ -3,7 +3,7 @@ Telegram bot LibLab
 """
 import time
 
-from telegram import ShippingOption, LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ShippingOption, LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import PreCheckoutQueryHandler, CallbackQueryHandler
 
 from registration import *
@@ -17,7 +17,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5224259246:AAFNi4jQBZ19CSuiqkB9kYNw6mz6h-lqI7E'
+TOKEN: str = '5153990837:AAHVrwUUYPFwfQlGv37TeZ2A3dsW1MYWRis'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -50,6 +50,14 @@ def methods_func(update: Update, context: Any) -> None:
 
 
 class User:
+
+    CRITERION: dict = {
+        'title': 'название',
+        'genre': 'жанр',
+        'author': 'автора',
+    }
+
+
     def __init__(self, id, name_surname, registration, subscription):
         self.id = id
         self.name_surname = name_surname
@@ -112,34 +120,54 @@ class User:
             time.sleep(2)
             methods_func(self, context)
 
+    def check_book(self: Update, context: Any):
+        response = self.callback_query
+        if response.data == 'need_to_get_subscription':
+            reply_buttons = [['😍Да', 'Нет...']]
+            reply_button_markup = ReplyKeyboardMarkup(reply_buttons, one_time_keyboard=True,resize_keyboard=True)
+            response.message.reply_text('К сожалению, эта книга доступна только по подписке😔\n'
+                            'Желаете ли вы её оформить?', reply_markup=reply_button_markup)
+            return 'subscribe_stage'
+        response.answer()
+        ReplyKeyboardRemove()
+        return ConversationHandler.END
+
+    def handle_subscription_case(self: Update, context: Any):
+        ReplyKeyboardRemove()
+        if self.message.text == 'Нет...':
+            self.message.reply_text('🔁🔁Переходим в основное меню🔁🔁')
+            methods_func(self, context)
+        else:
+            self.message.text = 'Да, давайте оформим 👌'
+            subscription_need_ans(self, context)
+        return ConversationHandler.END
+
     def take_book_1_func(self: Update, context: Any):
         ans = self.message.text
         # здесь надо не завершать ConversationHandler, а продолжить
         # чтобы дальше писать свой блок взятия книги по типу
-        if ans == 'title':
-            User.take_book_title(self, context)
-            return ConversationHandler.END
-        elif ans == 'genre':
-            User.take_book_genre(self, context)
-            return ConversationHandler.END
-        elif ans == 'author':
-            User.take_book_author(self, context)
-            return ConversationHandler.END
-        elif ans == 'rating':
+        if ans != 'rating':
+            flag = User.find_book_function(self, context)
+            return flag
+        else:
             # Можно как то так продолжить
             self.message.reply_text('Вы уверены?')
             return 5.1
 
+    def find_book_function(self: Update, context: Any):
+        inner_find_book_function(self,  context, User.CRITERION[self.message.text])
+        return User.CRITERION[self.message.text]
+
     def take_book_title(self: Update, context: Any):
-        self.message.reply_text('title')
-        return ConversationHandler.END
+        inner_take_book(self, context, self.message.text, 'title')
+        return 'checking_stage'
 
     def take_book_genre(self: Update, context: Any):
-        self.message.reply_text('genre')
+
         return ConversationHandler.END
 
     def take_book_author(self: Update, context: Any):
-        self.message.reply_text('author')
+
         return ConversationHandler.END
 
     def take_book_rating(self: Update, context: Any):
@@ -156,7 +184,7 @@ class Subscription:
         self.activity = activity
 
     def renew_dates_func(self: Update, context: CallbackContext):
-        renew_dates_user(self, context)
+        pass
 
     # checking correction pay
     def precheckout_callback(self: Update, context: Any) -> None:
@@ -215,10 +243,13 @@ def main() -> None:
         entry_points=[PrefixHandler('📖', 'take_book', User.begin_take_book_user_func)],
         states={
             1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)],
-            2.1: [MessageHandler(Filters.text, User.take_book_title, pass_user_data=True)],
-            3.1: [MessageHandler(Filters.text, User.take_book_genre, pass_user_data=True)],
-            4.1: [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True)],
-            5.1: [MessageHandler(Filters.text, User.take_book_rating, pass_user_data=True)],
+            1.1: [MessageHandler(Filters.text, User.find_book_function, pass_user_data=True)],
+            'название': [MessageHandler(Filters.text, User.take_book_title, pass_user_data=True)],
+            'жанр': [MessageHandler(Filters.text, User.take_book_genre, pass_user_data=True)],
+            'автора': [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True)],
+            'rating': [MessageHandler(Filters.text, User.take_book_rating, pass_user_data=True)],
+            'checking_stage': [CallbackQueryHandler(User.check_book, pass_user_data=True)],
+            'subscribe_stage': [MessageHandler(Filters.text, User.handle_subscription_case, pass_user_data=True )]
         }, fallbacks=[CommandHandler('stop', stop)]
     )
     dispatcher.add_handler(conv_handler)

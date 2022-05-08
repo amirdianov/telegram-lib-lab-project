@@ -94,7 +94,7 @@ def subscription_need_ans(self: Update, context: Any):
         self.message.reply_text('💸 Мы ожидаем вашей оплаты 💸')
         return True
     elif ans == 'Нет, спасибо 😒':
-        self.message.reply_text('Очень жаль 😞\nТогда вдругой раз 📍')
+        self.message.reply_text('Очень жаль 😞\nТогда в другой раз 📍')
         return False
     elif ans == '📃methods':
         return False
