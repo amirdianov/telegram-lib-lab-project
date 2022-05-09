@@ -19,6 +19,22 @@ logger = logging.getLogger(__name__)
 
 TOKEN: str = '5153990837:AAHVrwUUYPFwfQlGv37TeZ2A3dsW1MYWRis'
 
+def inner_check_book(self, context: Any):
+        print("callback_query:", self.callback_query.data)
+        response = self.callback_query
+        response.answer()
+        if response.data == 'need_to_get_subscription':
+            reply_buttons = [['😍Да', 'Нет...']]
+            reply_button_markup = ReplyKeyboardMarkup(reply_buttons, one_time_keyboard=True,resize_keyboard=True)
+            response.message.reply_text('К сожалению, эта книга доступна только по подписке😔\n'
+                            'Желаете ли вы её оформить?', reply_markup=reply_button_markup)
+            return 'subscribe_stage'
+        elif response.data == 'back_to_prev_state':
+            return User.find_book_function_for_inline(self, context)
+        elif response.data == 'back_to_main_menu':
+            methods_func(response, context)
+            return ConversationHandler.END
+
 
 def start_messaging(update: Update, context: Any) -> int:
     """Function greets the user"""
@@ -121,28 +137,17 @@ class User:
             methods_func(self, context)
 
     def check_book(self: Update, context: Any):
-        response = self.callback_query
-        if response.data == 'need_to_get_subscription':
-            reply_buttons = [['😍Да', 'Нет...']]
-            reply_button_markup = ReplyKeyboardMarkup(reply_buttons, one_time_keyboard=True,resize_keyboard=True)
-            response.message.reply_text('К сожалению, эта книга доступна только по подписке😔\n'
-                            'Желаете ли вы её оформить?', reply_markup=reply_button_markup)
-            return 'subscribe_stage'
-        response.answer()
-        ReplyKeyboardRemove()
-        return ConversationHandler.END
+        print('Стадия check_book')
+        return inner_check_book(self, context)
 
     def handle_subscription_case(self: Update, context: Any):
+        print('Стадия handle_subscription_case')
         ReplyKeyboardRemove()
-        if self.message.text == 'Нет...':
-            self.message.reply_text('🔁🔁Переходим в основное меню🔁🔁')
-            methods_func(self, context)
-        else:
-            self.message.text = 'Да, давайте оформим 👌'
-            subscription_need_ans(self, context)
+        inner_handle_subscription_case(self, context)
         return ConversationHandler.END
 
     def take_book_1_func(self: Update, context: Any):
+        print('Стадия take_book_1_func')
         ans = self.message.text
         # здесь надо не завершать ConversationHandler, а продолжить
         # чтобы дальше писать свой блок взятия книги по типу
@@ -158,9 +163,34 @@ class User:
         inner_find_book_function(self,  context, User.CRITERION[self.message.text])
         return User.CRITERION[self.message.text]
 
+    def find_book_function_for_inline(self, context: Any):
+        print('Стадия find_book_function_for_inline')
+        print('context.user_data',context.user_data['criterion'])
+        response = self.callback_query
+        inner_find_book_function_for_inline(response, context)
+        response.answer()
+        response.message.edit_reply_markup(reply_markup=None)
+        return context.user_data['criterion']
+
     def take_book_title(self: Update, context: Any):
-        inner_take_book(self, context, self.message.text, 'title')
+        print('Стадия take_book_title')
+        print(self.message.text)
+        inner_take_book(self, context, self.message.text.title(), 'title')
         return 'checking_stage'
+
+    def handle_coming_back(self, context):
+        print('Стадия handle_coming_back')
+        print(self.callback_query.data)
+        response = self.callback_query
+        print('id:', self.callback_query.message.chat.id)
+        if response.data == 'back_to_main_menu':
+            response.answer()
+            methods_func(response, context)
+            return ConversationHandler.END
+        elif response.data == 'back_to_prev_state':
+            response.answer()
+            response.message.edit_reply_markup(reply_markup=None)
+            return User.begin_take_book_user_func(response, context)
 
     def take_book_genre(self: Update, context: Any):
 
@@ -240,11 +270,12 @@ def main() -> None:
     # dispatcher.add_handler(PrefixHandler('📃', 'methods', methods_func))
     dispatcher.add_handler(PrefixHandler('❓', 'help', help_func))
     conv_handler = ConversationHandler(
-        entry_points=[PrefixHandler('📖', 'take_book', User.begin_take_book_user_func)],
+        entry_points=[PrefixHandler('📖', 'take_book', User.begin_take_book_user_func),
+                      CallbackQueryHandler(User.find_book_function_for_inline, pass_user_data=True)],
         states={
             1: [MessageHandler(Filters.text, User.take_book_1_func, pass_user_data=True)],
-            1.1: [MessageHandler(Filters.text, User.find_book_function, pass_user_data=True)],
-            'название': [MessageHandler(Filters.text, User.take_book_title, pass_user_data=True)],
+            'название': [MessageHandler(Filters.text, User.take_book_title, pass_user_data=True),
+                         CallbackQueryHandler(User.handle_coming_back, pass_user_data=True)],
             'жанр': [MessageHandler(Filters.text, User.take_book_genre, pass_user_data=True)],
             'автора': [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True)],
             'rating': [MessageHandler(Filters.text, User.take_book_rating, pass_user_data=True)],
