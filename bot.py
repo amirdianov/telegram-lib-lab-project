@@ -30,8 +30,10 @@ def inner_check_book(self, context: Any):
                             'Желаете ли вы её оформить?', reply_markup=reply_button_markup)
             return 'subscribe_stage'
         elif response.data == 'back_to_prev_state':
+            delete_telegram_message(response)
             return User.find_book_function_for_inline(self, context)
         elif response.data == 'back_to_main_menu':
+            delete_telegram_message(response)
             methods_func(response, context)
             return ConversationHandler.END
 
@@ -169,7 +171,7 @@ class User:
         response = self.callback_query
         inner_find_book_function_for_inline(response, context)
         response.answer()
-        response.message.edit_reply_markup(reply_markup=None)
+        delete_telegram_message(response)
         return context.user_data['criterion']
 
     def take_book_title(self: Update, context: Any):
@@ -185,11 +187,12 @@ class User:
         print('id:', self.callback_query.message.chat.id)
         if response.data == 'back_to_main_menu':
             response.answer()
+            delete_telegram_message(response)
             methods_func(response, context)
             return ConversationHandler.END
         elif response.data == 'back_to_prev_state':
             response.answer()
-            response.message.edit_reply_markup(reply_markup=None)
+            delete_telegram_message(response)
             return User.begin_take_book_user_func(response, context)
 
     def take_book_genre(self: Update, context: Any):

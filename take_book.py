@@ -24,7 +24,15 @@ def find_book(book):
     """use db"""
     return True
 
-def inner_take_book_user(id):
+def delete_telegram_message(callback):
+    try:
+        print('message_id:', callback.inline_message_id)
+        callback.delete_message()
+    except Exception as ex:
+        print(ex, '\nMessage has already deleted')
+
+
+def inner_take_book_user(self, id):
     if check_registration(id):
         return True
     else:
@@ -35,10 +43,10 @@ def take_book_user(self: Update, context: Any):
     "checking user in db"
     user_id = self.message.from_user.id
     try:
-        return inner_take_book_user(user_id)
+        return inner_take_book_user(self, user_id)
     except IndexError:
         user_id = self.message.chat.id
-        return inner_take_book_user(user_id)
+        return inner_take_book_user(self, user_id)
 
 def take_book_type(self: Update, context: Any):
     reply_keyboard = [['title', 'genre'], ['author', 'rating']]
