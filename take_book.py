@@ -24,6 +24,15 @@ def create_back_to_prev_state_button():
                                 callback_data='back_to_prev_state')
 
 
+def create_back_to_prev_state_button_1():
+    return InlineKeyboardButton(text='🔺Вернуться назад🔺',
+                                callback_data='back_to_prev_state_1')
+
+
+def smile(status):
+    return '🔒' if status else '✅'
+
+
 def delete_telegram_message(callback):
     try:
         print('message_id:', callback.inline_message_id)
@@ -61,15 +70,15 @@ def create_genres_buttons(genres):
     buttons = []
     for i in genres:
         buttons.append([InlineKeyboardButton(text=f'{i}',
-                                            callback_data='reaction_button_genre')])
+                                             callback_data=f'{i}')])
     return buttons
 
 
-def inner_find_book_function_template(user, context, genres=None):
+def inner_find_book_function_template(user, context):
     if context.user_data["criterion"] == 'жанр':
         user.message.reply_text(text=f'📚Выберите {context.user_data["criterion"]} книги:',
                                 reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
-                                                                   *create_genres_buttons(genres),
+                                                                   *create_genres_buttons(sorted([i[0] for i in set(get_all_value_from_column("genre"))])),
                                                                    [create_back_to_main_menu_button()]],
                                                                   one_time_keyboard=True,
                                                                   resize_keyboard=True))
@@ -84,12 +93,8 @@ def inner_find_book_function_template(user, context, genres=None):
 def inner_find_book_function(user: Update, context: Any, canon: str):
     context.user_data['criterion'] = canon
     print('context.user_data', context.user_data['criterion'])
-    if canon == 'жанр':
-        genres = sorted([i[0] for i in set(get_all_value_from_column(user.message.text))])
-        inner_find_book_function_template(user, context, genres)
-    elif canon == 'название':
+    if canon == 'жанр' or 'название':
         inner_find_book_function_template(user, context)
-
 
 
 def inner_find_book_function_for_inline(user: Update, context: Any):
@@ -103,11 +108,32 @@ def inner_take_book(self: Update, context: Any, user_message: str, criterion: st
     needed_books = main_get_item(db_name='Books', some_column=criterion, value=user_message,
                                  column1='title', column2='name', column3='subscription_need')
 
-    def smile(status):
-        return '🔒' if status else '✅'
-
     buttons_list: list[list[str]] = []
     urls_list = main_get_item(column1='url', db_name='Books', some_column=criterion, value=user_message)
+    for index, book_name in enumerate(needed_books):
+        kw_args = {}
+        if is_subscriber or not book_name[2]:
+            kw_args['url'] = urls_list[index][0][:-1]
+        else:
+            kw_args['callback_data'] = 'need_to_get_subscription'
+        button = InlineKeyboardButton(text=smile(book_name[2]) + book_name[0] + ' ' + book_name[1], **kw_args)
+        buttons_list.append([button])
+    # back_to_main_menu = InlineKeyboardButton(text='♻Вернуться в главное меню♻',
+    #                                         callback_data='back_to_main_menu')
+    buttons_list.extend([[create_back_to_prev_state_button_1()], [create_back_to_main_menu_button()]])
+    print(buttons_list)
+    reply_markup_books = InlineKeyboardMarkup(buttons_list, one_time_keyboard=True,
+                                              resize_keyboard=True)
+    self.message.reply_text('📋Список книг, удовлетворяющих выбранным критериям:',
+                            reply_markup=reply_markup_books)
+
+
+def create_buttons_book(self: Update, context: Any, name_genre: str, user_id):
+    is_subscriber = activated_subscription(user_id)
+    needed_books = main_get_item(db_name='Books', some_column='genre', value=name_genre,
+                                 column1='title', column2='name', column3='subscription_need')
+    buttons_list: list[list[str]] = []
+    urls_list = main_get_item(column1='url', db_name='Books', some_column='genre', value=name_genre)
     for index, book_name in enumerate(needed_books):
         kw_args = {}
         if is_subscriber or not book_name[2]:

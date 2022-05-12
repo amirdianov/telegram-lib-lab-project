@@ -28,6 +28,7 @@ def start_messaging(update: Update, context: Any) -> int:
                               'Желаю вам приятного чтения 🤓')
     methods_func(update, context)
     us_id = update.message.from_user.id
+    User.User_id = us_id
     add_item(us_id)
 
 
@@ -55,6 +56,7 @@ class User:
         'genre': 'жанр',
         'author': 'автора',
     }
+    User_id = None
 
     def __init__(self, id, name_surname, registration, subscription):
         self.id = id
@@ -63,6 +65,8 @@ class User:
         self.subscription = subscription
 
     def begin_registration_user_func(self: Update, context: Any):
+        # us_id = self.message.from_user.id
+        # User.User_id = us_id
         flag: bool = begin_registration_user(self, context)
         if flag:
             return 1
@@ -79,6 +83,8 @@ class User:
         return 1
 
     def begin_subscription_user_func(self: Update, context: Any):
+        # us_id = self.message.from_user.id
+        # User.User_id = us_id
         flag: bool = subscription_user(self, context)
         if not flag:
             time.sleep(2)
@@ -110,6 +116,8 @@ class User:
         return ConversationHandler.END
 
     def begin_take_book_user_func(self: Update, context: Any):
+        # us_id = self.message.from_user.id
+        # User.User_id = us_id
         if take_book_user(self, context):
             take_book_type(self, context)
             return 1
@@ -127,8 +135,7 @@ class User:
             return flag
         else:
             # Можно как то так продолжить
-            self.message.reply_text('Вы уверены?')
-            return 5.1
+            self.message.reply_text('Что - то пошло не так и бот сломался...')
 
     def find_book_function(self: Update, context: Any):
         inner_find_book_function(self, context, User.CRITERION[self.message.text])
@@ -140,14 +147,19 @@ class User:
         inner_take_book(self, context, self.message.text.capitalize(), 'title')
         return 'checking_stage'
 
-    def check_book(self: Update, context: Any):
-        print('Стадия check_book')
-        return User.inner_check_book(self, context)
+    def take_book_genre(self: Update, context: Any):
+        print('Стадия take_genre')
 
-    def handle_subscription_case(self: Update, context: Any):
-        print('Стадия handle_subscription_case')
-        ReplyKeyboardRemove()
-        inner_handle_subscription_case(self, context)
+    def take_book_genre_1(self: Update, context: Any, name_genre: Any):
+        create_buttons_book(self, context, name_genre, User.User_id)
+        return 'checking_stage'
+
+    def take_book_author(self: Update, context: Any):
+        ...
+        return ConversationHandler.END
+
+    def take_book_rating(self: Update, context: Any):
+        ...
         return ConversationHandler.END
 
     def find_book_function_for_inline(self, context: Any):
@@ -159,24 +171,15 @@ class User:
         delete_telegram_message(response)
         return context.user_data['criterion']
 
-    def handle_coming_back(self, context):
-        print('Стадия handle_coming_back')
-        print(self.callback_query.data)
-        response = self.callback_query
-        print('id:', self.callback_query.message.chat.id)
-        if response.data == 'back_to_main_menu':
-            response.answer()
-            delete_telegram_message(response)
-            methods_func(response, context)
-            return ConversationHandler.END
-        elif response.data == 'back_to_prev_state':
-            response.answer()
-            delete_telegram_message(response)
-            return User.begin_take_book_user_func(response, context)
-        elif response.data == 'reaction_button_genre':
-            response.answer()
-            delete_telegram_message(response)
-            return
+    def check_book(self: Update, context: Any):
+        print('Стадия check_book')
+        return User.inner_check_book(self, context)
+
+    def handle_subscription_case(self: Update, context: Any):
+        print('Стадия handle_subscription_case')
+        ReplyKeyboardRemove()
+        inner_handle_subscription_case(self, context)
+        return ConversationHandler.END
 
     def inner_check_book(self, context: Any):
         print("callback_query:", self.callback_query.data)
@@ -191,23 +194,34 @@ class User:
         elif response.data == 'back_to_prev_state':
             delete_telegram_message(response)
             return User.find_book_function_for_inline(self, context)
+        elif response.data == 'back_to_prev_state_1':
+            delete_telegram_message(response)
+            return User.find_book_function_for_inline(self, context)
         elif response.data == 'back_to_main_menu':
             delete_telegram_message(response)
             methods_func(response, context)
             return ConversationHandler.END
 
-    def take_book_genre(self: Update, context: Any):
-
-        return ConversationHandler.END
-
-    def take_book_author(self: Update, context: Any):
-
-        return ConversationHandler.END
-
-    def take_book_rating(self: Update, context: Any):
-        text = self.message.text
-        self.message.reply_text('rating')
-        return ConversationHandler.END
+    def handle_coming_back(self, context):
+        print('Стадия handle_coming_back_new')
+        print(self.callback_query.data)
+        response = self.callback_query
+        print('id:', self.callback_query.message.chat.id)
+        if response.data == 'back_to_main_menu':
+            response.answer()
+            delete_telegram_message(response)
+            methods_func(response, context)
+            return ConversationHandler.END
+        elif response.data == 'back_to_prev_state':
+            response.answer()
+            delete_telegram_message(response)
+            return User.begin_take_book_user_func(response, context)
+        elif response.data == 'back_to_prev_state_1':
+            response.answer()
+            delete_telegram_message(response)
+            return User.take_book_genre(response, context)
+        else:
+            return User.take_book_genre_1(response, context, response.data)
 
 
 class Subscription:
