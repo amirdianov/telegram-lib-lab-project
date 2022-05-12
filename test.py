@@ -2,8 +2,7 @@
 
 
 def f(*args):
-    print(type(args))
+    return [i for i in range(10)]
 
 
-a, b, c = 1, 2, 3
-f(a, b, c)
+print(*f())

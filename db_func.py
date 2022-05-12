@@ -38,9 +38,16 @@ def update_items(table, what_past, where_past, value_past, where_value):
     cursor.execute(f'UPDATE {table} SET {what_past} = ? WHERE {where_past} = ?', (value_past, where_value))
     conn.commit()
 
+
 def get_item(column: str, db_name: str, some_column: str, value: Any):
     cursor.execute(f"SELECT {column} FROM {db_name} WHERE {some_column} = '{value}'")
     return cursor.fetchall()
+
+
+def get_all_value_from_column(column: str):
+    cursor.execute(f"SELECT {column} FROM Books")
+    return cursor.fetchall()
+
 
 def main_get_item(db_name: str, some_column: str, value: Any, *args, **kwargs):
     selected_columns = ','.join(chain(args, kwargs.values()))
