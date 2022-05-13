@@ -3,7 +3,8 @@ import sqlite3
 import time
 from typing import Any
 
-from telegram import Update, ForceReply, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
+import datetime
+from telegram import Update, ForceReply, ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton, Message
 from telegram.ext import Updater, CommandHandler, ConversationHandler, MessageHandler, CommandHandler, Filters, \
     CallbackContext, PrefixHandler
 
@@ -34,12 +35,21 @@ def smile(status):
 
 
 def delete_telegram_message(callback):
+    print('Function delete_telegram_message was called!')
     try:
         print('message_id:', callback.inline_message_id)
         callback.delete_message()
     except Exception as ex:
         print(ex, '\nMessage has already deleted')
 
+def delete_second_telegram_message(message: Message):
+    print('Function delete_second_telegram_message was called!')
+    try:
+        print('message:', message)
+        message.delete()
+        print('Message has been successfully deleted!')
+    except Exception as ex:
+        print(ex, '\nMessage has been already deleted!')
 
 def inner_take_book_user(self, id):
     if check_registration(id):
@@ -52,6 +62,7 @@ def inner_take_book_user(self, id):
 
 def take_book_user(self: Update, context: Any):
     "checking user in db"
+    print('Function take_book_user was called!')
     user_id = self.message.from_user.id
     try:
         return inner_take_book_user(self, user_id)
@@ -75,22 +86,26 @@ def create_genres_buttons(genres):
 
 
 def inner_find_book_function_template(user, context):
+    print('Fucntion inner_find_book_function_template  was called!')
+    print('Message text:', user.message.text)
     if context.user_data["criterion"] == 'жанр':
-        user.message.reply_text(text=f'📚Выберите {context.user_data["criterion"]} книги:',
+        context.user_data['message'] = user.message.reply_text(text=f'📚Выберите {context.user_data["criterion"]} книги:',
                                 reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
                                                                    *create_genres_buttons(sorted([i[0] for i in set(get_all_value_from_column("genre"))])),
                                                                    [create_back_to_main_menu_button()]],
                                                                   one_time_keyboard=True,
                                                                   resize_keyboard=True))
     elif context.user_data["criterion"] == 'название':
-        user.message.reply_text(text=f'📚Введите {context.user_data["criterion"]} книги:',
+        context.user_data['message'] = user.message.reply_text(text=f'📚Введите {context.user_data["criterion"]} книги:',
                                 reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
                                                                    [create_back_to_main_menu_button()]],
                                                                   one_time_keyboard=True,
                                                                   resize_keyboard=True))
+    print("context.user_data['message']", context.user_data['message'])
 
 
 def inner_find_book_function(user: Update, context: Any, canon: str):
+    print('Function inner_find_book_function was called!')
     context.user_data['criterion'] = canon
     print('context.user_data', context.user_data['criterion'])
     if canon == 'жанр' or 'название':
@@ -98,11 +113,13 @@ def inner_find_book_function(user: Update, context: Any, canon: str):
 
 
 def inner_find_book_function_for_inline(user: Update, context: Any):
+    print('fUnction inner_find_book_function_for_inline was called!')
     print('context.user_data', context.user_data['criterion'])
     return inner_find_book_function_template(user, context)
 
 
 def inner_take_book(self: Update, context: Any, user_message: str, criterion: str):
+    print('Function inner_take_book was called!')
     user_id = self.message.from_user.id
     is_subscriber = activated_subscription(user_id)
     needed_books = main_get_item(db_name='Books', some_column=criterion, value=user_message,
@@ -129,6 +146,7 @@ def inner_take_book(self: Update, context: Any, user_message: str, criterion: st
 
 
 def create_buttons_book(self: Update, context: Any, name_genre: str, user_id):
+    print('Function create_buttons_book was called!')
     is_subscriber = activated_subscription(user_id)
     needed_books = main_get_item(db_name='Books', some_column='genre', value=name_genre,
                                  column1='title', column2='name', column3='subscription_need')
@@ -171,6 +189,7 @@ def create_buttons_book(self: Update, context: Any, name_genre: str, user_id):
 
 
 def inner_handle_subscription_case(self, context):
+    print('Function inner_handle_subscription_case was called!')
     if self.message.text == 'Нет...':
         self.message.reply_text('🔁🔁 Переходим в основное меню 🔁🔁')
         methods_func(self, context)

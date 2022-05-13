@@ -17,7 +17,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5224259246:AAEi3-FVwfceOq9eW7poPtOsAqdL2vzSCc4'
+TOKEN: str = '5153990837:AAHVrwUUYPFwfQlGv37TeZ2A3dsW1MYWRis'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -143,8 +143,9 @@ class User:
 
     def take_book_title(self: Update, context: Any):
         print('Стадия take_book_title')
-        print(self.message.text)
+        print('Message text:', self.message.text)
         inner_take_book(self, context, self.message.text.capitalize(), 'title')
+        delete_second_telegram_message(context.user_data['message'])
         return 'checking_stage'
 
     def take_book_genre(self: Update, context: Any):
@@ -199,6 +200,7 @@ class User:
             return User.find_book_function_for_inline(self, context)
         elif response.data == 'back_to_main_menu':
             delete_telegram_message(response)
+            delete_second_telegram_message(context.user_data['message'])
             methods_func(response, context)
             return ConversationHandler.END
 
@@ -209,6 +211,7 @@ class User:
         print('id:', self.callback_query.message.chat.id)
         if response.data == 'back_to_main_menu':
             response.answer()
+            delete_second_telegram_message(context.user_data['message'])
             delete_telegram_message(response)
             methods_func(response, context)
             return ConversationHandler.END
