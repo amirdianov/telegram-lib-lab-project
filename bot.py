@@ -153,6 +153,7 @@ class User:
 
     def take_book_genre_1(self: Update, context: Any, name_genre: Any):
         create_buttons_book(self, context, name_genre, User.User_id)
+        delete_second_telegram_message(context.user_data['message'])
         return 'checking_stage'
 
     def take_book_author(self: Update, context: Any):
