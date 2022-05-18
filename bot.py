@@ -17,7 +17,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-TOKEN: str = '5153990837:AAHVrwUUYPFwfQlGv37TeZ2A3dsW1MYWRis'
+TOKEN: str = '5224259246:AAEi3-FVwfceOq9eW7poPtOsAqdL2vzSCc4'
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -52,9 +52,9 @@ def methods_func(update: Update, context: Any) -> None:
 
 class User:
     CRITERION: dict = {
-        'title': 'название',
-        'genre': 'жанр',
-        'author': 'автора',
+        '📒title': 'название',
+        '📋genre': 'жанр',
+        '🧐author': 'автора',
     }
     User_id = None
 
@@ -130,7 +130,7 @@ class User:
         ans = self.message.text
         # здесь надо не завершать ConversationHandler, а продолжить
         # чтобы дальше писать свой блок взятия книги по типу
-        if ans == 'title' or ans == 'genre':
+        if ans == '📒title' or ans == '📋genre' or ans == '🧐author':
             flag = User.find_book_function(self, context)
             return flag
         else:
@@ -157,8 +157,12 @@ class User:
         return 'checking_stage'
 
     def take_book_author(self: Update, context: Any):
-        ...
-        return ConversationHandler.END
+        print('Стадия take_author')
+
+    def take_book_author_1(self: Update, context: Any, author: Any):
+        create_buttons_book(self, context, author, User.User_id)
+        delete_second_telegram_message(context.user_data['message'])
+        return 'checking_stage'
 
     def take_book_rating(self: Update, context: Any):
         ...
@@ -224,8 +228,10 @@ class User:
             response.answer()
             delete_telegram_message(response)
             return User.take_book_genre(response, context)
-        else:
+        elif context.user_data['criterion'] == 'жанр':
             return User.take_book_genre_1(response, context, response.data)
+        elif context.user_data['criterion'] == 'автора':
+            return User.take_book_author_1(response, context, response.data)
 
 
 class Subscription:
@@ -300,7 +306,8 @@ def main() -> None:
                          CallbackQueryHandler(User.handle_coming_back, pass_user_data=True)],
             'жанр': [MessageHandler(Filters.text, User.take_book_genre, pass_user_data=True),
                      CallbackQueryHandler(User.handle_coming_back, pass_user_data=True)],
-            'автора': [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True)],
+            'автора': [MessageHandler(Filters.text, User.take_book_author, pass_user_data=True),
+                       CallbackQueryHandler(User.handle_coming_back, pass_user_data=True)],
             'rating': [MessageHandler(Filters.text, User.take_book_rating, pass_user_data=True)],
             'checking_stage': [CallbackQueryHandler(User.check_book, pass_user_data=True)],
             'subscribe_stage': [MessageHandler(Filters.text, User.handle_subscription_case, pass_user_data=True)]

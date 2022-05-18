@@ -42,6 +42,7 @@ def delete_telegram_message(callback):
     except Exception as ex:
         print(ex, '\nMessage has already deleted')
 
+
 def delete_second_telegram_message(message: Message):
     print('Function delete_second_telegram_message was called!')
     try:
@@ -50,6 +51,7 @@ def delete_second_telegram_message(message: Message):
         print('Message has been successfully deleted!')
     except Exception as ex:
         print(ex, '\nMessage has been already deleted!')
+
 
 def inner_take_book_user(self, id):
     if check_registration(id):
@@ -72,14 +74,16 @@ def take_book_user(self: Update, context: Any):
 
 
 def take_book_type(self: Update, context: Any):
-    reply_keyboard = [['title', 'genre'], ['author', 'rating']]
+    reply_keyboard = [['📒title', '📋genre'], ['🧐author']]
     markup = ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True, resize_keyboard=True)
     self.message.reply_text('По какому критерию книги показать?', reply_markup=markup)
 
 
-def create_genres_buttons(genres):
+def create_variation_buttons(kit):
     buttons = []
-    for i in genres:
+    for i in kit:
+        if i == 'Null':
+            i = 'Отсутствует'
         buttons.append([InlineKeyboardButton(text=f'{i}',
                                              callback_data=f'{i}')])
     return buttons
@@ -88,19 +92,23 @@ def create_genres_buttons(genres):
 def inner_find_book_function_template(user, context):
     print('Fucntion inner_find_book_function_template  was called!')
     print('Message text:', user.message.text)
-    if context.user_data["criterion"] == 'жанр':
-        context.user_data['message'] = user.message.reply_text(text=f'📚Выберите {context.user_data["criterion"]} книги:',
-                                reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
-                                                                   *create_genres_buttons(sorted([i[0] for i in set(get_all_value_from_column("genre"))])),
-                                                                   [create_back_to_main_menu_button()]],
-                                                                  one_time_keyboard=True,
-                                                                  resize_keyboard=True))
+    if context.user_data["criterion"] == 'жанр' or context.user_data["criterion"] == 'автора':
+        variation = 'genre' if context.user_data["criterion"] == 'жанр' else 'name'
+        context.user_data['message'] = user.message.reply_text(
+            text=f'📚Выберите {context.user_data["criterion"]} книги:',
+            reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
+                                               *create_variation_buttons(
+                                                   sorted([i[0] for i in set(get_all_value_from_column(variation))])),
+                                               [create_back_to_main_menu_button()]],
+                                              one_time_keyboard=True,
+                                              resize_keyboard=True))
     elif context.user_data["criterion"] == 'название':
-        context.user_data['message'] = user.message.reply_text(text=f'📚Введите {context.user_data["criterion"]} книги:',
-                                reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
-                                                                   [create_back_to_main_menu_button()]],
-                                                                  one_time_keyboard=True,
-                                                                  resize_keyboard=True))
+        context.user_data['message'] = user.message.reply_text(
+            text=f'📚Введите {context.user_data["criterion"]} книги:',
+            reply_markup=InlineKeyboardMarkup([[create_back_to_prev_state_button()],
+                                               [create_back_to_main_menu_button()]],
+                                              one_time_keyboard=True,
+                                              resize_keyboard=True))
     print("context.user_data['message']", context.user_data['message'])
 
 
@@ -108,7 +116,7 @@ def inner_find_book_function(user: Update, context: Any, canon: str):
     print('Function inner_find_book_function was called!')
     context.user_data['criterion'] = canon
     print('context.user_data', context.user_data['criterion'])
-    if canon == 'жанр' or 'название':
+    if canon == 'жанр' or canon == 'название' or canon == 'автора':
         inner_find_book_function_template(user, context)
 
 
@@ -145,13 +153,14 @@ def inner_take_book(self: Update, context: Any, user_message: str, criterion: st
                             reply_markup=reply_markup_books)
 
 
-def create_buttons_book(self: Update, context: Any, name_genre: str, user_id):
+def create_buttons_book(self: Update, context: Any, variation: str, user_id):
     print('Function create_buttons_book was called!')
+    column = 'genre' if context.user_data["criterion"] == 'жанр' else 'name'
     is_subscriber = activated_subscription(user_id)
-    needed_books = main_get_item(db_name='Books', some_column='genre', value=name_genre,
+    needed_books = main_get_item(db_name='Books', some_column=column, value=variation,
                                  column1='title', column2='name', column3='subscription_need')
     buttons_list: list[list[str]] = []
-    urls_list = main_get_item(column1='url', db_name='Books', some_column='genre', value=name_genre)
+    urls_list = main_get_item(column1='url', db_name='Books', some_column=column, value=variation)
     for index, book_name in enumerate(needed_books):
         kw_args = {}
         if is_subscriber or not book_name[2]:
