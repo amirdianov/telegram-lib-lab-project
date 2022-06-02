@@ -5,7 +5,8 @@ import time
 
 from telegram import ShippingOption, LabeledPrice, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import PreCheckoutQueryHandler, CallbackQueryHandler
-
+from dotenv import load_dotenv
+from os import environ
 from registration import *
 from subscription import *
 from take_book import *
@@ -14,10 +15,10 @@ from db_func import *
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
+load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-TOKEN: str = '5224259246:AAEi3-FVwfceOq9eW7poPtOsAqdL2vzSCc4'
+TELEGRAM_BOT_TOKEN = environ.get("TOKEN")
 
 
 def start_messaging(update: Update, context: Any) -> int:
@@ -290,7 +291,7 @@ def stop(update: Update, context: Any):
 
 def main() -> None:
     """main function organizes work of our bot"""
-    updater: Updater = Updater(TOKEN, use_context=True)
+    updater: Updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', start_messaging))
     dispatcher.add_handler(CommandHandler('methods', start_messaging))
